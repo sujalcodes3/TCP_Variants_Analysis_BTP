@@ -82,18 +82,6 @@ int main(int argc, char* argv[])
     NodeContainer EndNodes;
     EndNodes.Create(2);
 
-    NodeContainer wifiNodes; 
-    wifiNodes.Add(Routers.Get(0));
-    wifiNodes.Add(Routers.Get(1));
-    YansWifiChannelHelper channel = YansWifiChannelHelper::Default();
-    YansWifiPhyHelper phy = YansWifiPhyHelper();
-    phy.SetChannel(channel.Create());
-    Ssid ssid = Ssid("ns-3-ssid");
-    WifiMacHelper mac;
-    WifiHelper wifi;
-    mac.SetType("ns3::ApWifiMac", "Ssid", SsidValue(ssid));
-    NetDeviceContainer wifiDevices;
-    wifiDevices = wifi.Install(phy, mac, wifiNodes);
 
     InternetStackHelper stack;
     stack.Install(Routers);
@@ -101,11 +89,7 @@ int main(int argc, char* argv[])
     stack.Install(EndNodes);
     
     // ROUTER and TRAFFIC NODE LINKS
-    NodeContainer buffer;
-    buffer.Add(Routers.Get(0));
-    buffer.Add(TrafficNodes.Get(0));
-    NetDeviceContainer linkRT00 = pointToPointNodeRouter.Install(buffer);
-
+    NetDeviceContainer linkRT00 = pointToPointNodeRouter.Install(Routers.Get(0), TrafficNodes.Get(0));
     NetDeviceContainer linkRT02 = pointToPointNodeRouter.Install(Routers.Get(0), TrafficNodes.Get(2));
     NetDeviceContainer linkRT11 = pointToPointNodeRouter.Install(Routers.Get(1), TrafficNodes.Get(1));
     NetDeviceContainer linkRT13 = pointToPointNodeRouter.Install(Routers.Get(1), TrafficNodes.Get(3));
@@ -145,14 +129,12 @@ int main(int argc, char* argv[])
     clientEndNode.Stop(Seconds(10.0));
     
     // TCP Reciever
-    /*
     uint16_t port = 50000;
     Address sinkLocalAddress(InetSocketAddress(interfaceRE1.GetAddress(1), port));
     PacketSinkHelper sinkHelper("ns3::TcpSocketFactory", sinkLocalAddress);
     ApplicationContainer serverEndNode = sinkHelper.Install(EndNodes.Get(1));
     serverEndNode.Start(Seconds(1.0));
     serverEndNode.Stop(Seconds(10.0));
-    */
 
     AnimationInterface anim(animFile);
     anim.EnablePacketMetadata();                                // Optional
