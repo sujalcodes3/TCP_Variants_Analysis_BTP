@@ -1,19 +1,6 @@
-/*
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2 as
- * published by the Free Software Foundation;
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-0.07  USA
- *
- * Author: George F. Riley<riley@ece.gatech.edu>
- */
+//accompanied with throughput and delay.
+
+
 #include <fstream> // For file I/O
 #include <iostream> // For input and output to the console
 #include <string> // For using the std::string class
@@ -262,7 +249,7 @@ int main(int argc, char* argv[]) {
     Simulator::Destroy();
 
     // Remove temporary files
-    std::remove("tcp-sent.txt");
-    std::remove("tcp-received.txt");
+    // std::remove("tcp-sent.txt");
+    // std::remove("tcp-received.txt");
     return 0;
 }

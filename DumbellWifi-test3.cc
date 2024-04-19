@@ -1,19 +1,8 @@
-/*
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2 as
- * published by the Free Software Foundation;
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-0.07  USA
- *
- * Author: George F. Riley<riley@ece.gatech.edu>
- */
+//Dumbbell topology with 2 routers, 4 traffic nodes, 1 server and 1 client
+//with a wireless connection between the routers.
+//without any taffic created by UDP nodes.
+//fully functional TCP connection between the server and the client.
+
 
 #include "ns3/applications-module.h"
 #include "ns3/core-module.h"
@@ -36,7 +25,7 @@ typedef Ipv4InterfaceContainer Ipv4IC;
 
 int main(int argc, char* argv[]) {
 
-    std::string animFile = "dumbell-three.xml"; 
+    std::string animFile = "dumbbell-animation-test3.xml"; 
     CommandLine cmd(__FILE__);
     cmd.Parse(argc, argv);
 
