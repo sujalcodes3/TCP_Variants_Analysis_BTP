@@ -1,34 +1,3 @@
-/*
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2 as
- * published by the Free Software Foundation;
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
- *
- * Author: George F. Riley<riley@ece.gatech.edu>
- *
- *
- *
- */
-
-/* TOPOLOGY 
- 
-           T0                  T1
-             \                / 
-              \              /
-       E0----- R0---------- R1-------- E1
-(clientNode)   /             \         (serverNode)
-              /               \
-            T2                 T3
- */
-
 #include "ns3/applications-module.h"
 #include "ns3/core-module.h"
 #include "ns3/internet-module.h"
@@ -52,7 +21,7 @@ int main(int argc, char* argv[]) {
     NodeContainer EndNodes;
     NodeContainer Routers;
     NodeContainer TrafficNodes;
-    
+
     // Create Nodes
     EndNodes.Create(2);
     Routers.Create(2);
@@ -60,7 +29,7 @@ int main(int argc, char* argv[]) {
 
     // helper for p2p links
     PointToPointHelper p2p;
-    p2p.SetDeviceAttribute("DataRate", StringValue("10Mbps"));
+    p2p.SetDeviceAttribute("DataRate", StringValue("1Mbps"));
     p2p.SetChannelAttribute("Delay", StringValue("1ms"));
 
 
@@ -69,11 +38,11 @@ int main(int argc, char* argv[]) {
     NetDeviceContainer linkRT02 = p2p.Install(Routers.Get(0), TrafficNodes.Get(2));
     NetDeviceContainer linkRT11 = p2p.Install(Routers.Get(1), TrafficNodes.Get(1));
     NetDeviceContainer linkRT13 = p2p.Install(Routers.Get(1), TrafficNodes.Get(3));
-    
+
     // ROUTER LINKS
     // if there is a p2p link between the routers.
     //NetDeviceContainer linkRR01 = p2p.Install(Routers.Get(0), Routers.Get(1));
-     
+
     // if there is a wireless link between the routers.    
     // set up a wireless connection between the two router
     YansWifiChannelHelper channel = YansWifiChannelHelper::Default();
@@ -85,13 +54,15 @@ int main(int argc, char* argv[]) {
 
     WifiHelper wifi;
 
-    NetDeviceContainer routers;
+    NetDeviceContainer apRouter;
     mac.SetType("ns3::AdhocWifiMac", "Ssid", SsidValue(ssid));
-    routers = wifi.Install(phy, mac, Routers);
+    apRouter = wifi.Install(phy, mac, Routers);
 
     MobilityHelper mobility;
     mobility.SetMobilityModel("ns3::ConstantPositionMobilityModel");
     mobility.Install(Routers);
+
+
 
     // ENDNODES ROUTER LINK
     NetDeviceContainer linkRE0 = p2p.Install(Routers.Get(0), EndNodes.Get(0));
@@ -117,36 +88,32 @@ int main(int argc, char* argv[]) {
     // Router Interface
     address.SetBase("10.1.3.0", "255.255.255.0");
     //Ipv4InterfaceContainer interfaceRR01 = address.Assign(linkRR01);
-    Ipv4InterfaceContainer interR0 = address.Assign(routers);
-    //Ipv4InterfaceContainer interR1 = address.Assign(staRouter);
+    Ipv4InterfaceContainer interR0 = address.Assign(apRouter);
+    // Ipv4InterfaceContainer interR1 = address.Assign(staRouter);
 
     uint16_t port = 50000;
     // TCP Sender
     OnOffHelper tcpSourceHelper("ns3::TcpSocketFactory", InetSocketAddress(IfaceRE1.GetAddress(1), port)); 
     tcpSourceHelper.SetAttribute("OnTime", StringValue("ns3::ConstantRandomVariable[Constant=1]"));
     tcpSourceHelper.SetAttribute("OffTime", StringValue("ns3::ConstantRandomVariable[Constant=0]"));
-    //tcpSourceHelper.SetAttribute("DataRate", DataRateValue(DataRate("10Mbps")));  
 
     ApplicationContainer tcpClientSource = tcpSourceHelper.Install(EndNodes.Get(0));
     tcpClientSource.Start(Seconds(1.0));  
     tcpClientSource.Stop(Seconds(10.0));
-    
+
     // TCP Reciever
     Address sinkLocalAddress(InetSocketAddress(IfaceRE1.GetAddress(1), port));
     PacketSinkHelper tcpSinkHelper("ns3::TcpSocketFactory", sinkLocalAddress);
+
     ApplicationContainer tcpServerSink = tcpSinkHelper.Install(EndNodes.Get(1));
     tcpServerSink.Start(Seconds(1.0));
     tcpServerSink.Stop(Seconds(10.0));
-    
-    
-    
-    
 
     AnimationInterface anim(animFile);
     anim.EnablePacketMetadata();                                // Optional
     anim.EnableIpv4L3ProtocolCounters(Seconds(0), Seconds(10)); // Optional
     anim.SetConstantPosition(Routers.Get(0), 25, 44);
-    
+
     Routers.Get(0);
     anim.SetConstantPosition(Routers.Get(1), 44, 44);
 
@@ -159,7 +126,7 @@ int main(int argc, char* argv[]) {
     anim.SetConstantPosition(TrafficNodes.Get(1), 65, 24);
     anim.SetConstantPosition(TrafficNodes.Get(2), 10, 64);
     anim.SetConstantPosition(TrafficNodes.Get(3), 65, 64);
-    
+
     // Set up the actual simulation
     Ipv4GlobalRoutingHelper::PopulateRoutingTables();
 
@@ -168,4 +135,3 @@ int main(int argc, char* argv[]) {
     Simulator::Destroy();
     return 0;
 }
-
