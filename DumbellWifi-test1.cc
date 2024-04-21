@@ -1,23 +1,7 @@
-/*
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2 as
- * published by the Free Software Foundation;
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
- *
- * Author: George F. Riley<riley@ece.gatech.edu>
- *
- *
- *
- *
- */
+//Dumbbell topology with 2 routers, 4 traffic nodes, 1 server and 1 client
+//with a p2p connection between the routers.
+//without any taffic created by UDP nodes.
+
 
 /* TOPOLOGY 
  
@@ -50,7 +34,7 @@ int main(int argc, char* argv[])
     Config::SetDefault("ns3::OnOffApplication::PacketSize", UintegerValue(512));
     Config::SetDefault("ns3::OnOffApplication::DataRate", StringValue("440kb/s"));
 
-    std::string animFile = "dumbbell-animation.xml"; // Name of file for animation output
+    std::string animFile = "dumbbell-animation-test1.xml"; // Name of file for animation output
 
     CommandLine cmd(__FILE__);
     cmd.AddValue("animFile", "File Name for Animation Output", animFile);

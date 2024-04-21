@@ -1,8 +1,6 @@
-//Dumbbell topology with 2 routers, 4 traffic nodes, 1 server and 1 client
-//with a wireless connection between the routers.
-//without any taffic created by UDP nodes.
-//fully functional TCP connection between the server and the client.
-
+#include <fstream> // For file I/O
+#include <iostream> // For input and output to the console
+#include <string> // For using the std::string class
 
 #include "ns3/applications-module.h"
 #include "ns3/core-module.h"
@@ -23,9 +21,21 @@ using namespace ns3;
 typedef NetDeviceContainer NDC;
 typedef Ipv4InterfaceContainer Ipv4IC;
 
+// Function to record when a packet is transmitted by the application
+void TxCallback (Ptr<OutputStreamWrapper> stream, Ptr<const Packet> packet) {
+  *stream->GetStream() << Simulator::Now().GetSeconds() << " " << packet->GetSize() << std::endl;
+}
+
+// Function to record when a packet is received by the sink application
+void RxCallback (Ptr<OutputStreamWrapper> stream, Ptr<const Packet> packet, const Address &address) {
+  *stream->GetStream() << Simulator::Now().GetSeconds() << " " << packet->GetSize() << std::endl;
+}
+
 int main(int argc, char* argv[]) {
 
-    std::string animFile = "dumbbell-animation-test3.xml"; 
+    Config::SetDefault("ns3::TcpL4Protocol::SocketType", StringValue("ns3::TcpCubic"));
+
+    std::string animFile = "throughput_delay_reverse.xml"; 
     CommandLine cmd(__FILE__);
     cmd.Parse(argc, argv);
 
@@ -41,7 +51,7 @@ int main(int argc, char* argv[]) {
 
     // helper for p2p links
     PointToPointHelper p2p;
-    p2p.SetDeviceAttribute("DataRate", StringValue("1Mbps"));
+    p2p.SetDeviceAttribute("DataRate", StringValue("3Mbps"));
     p2p.SetChannelAttribute("Delay", StringValue("1ms"));
 
 
@@ -110,7 +120,7 @@ int main(int argc, char* argv[]) {
 
     // TCP Sender
     OnOffHelper tcpSourceHelper("ns3::TcpSocketFactory", InetSocketAddress(IfaceRE1.GetAddress(1), 8080));
-    tcpSourceHelper.SetAttribute("DataRate", DataRateValue(DataRate("1Mbps")));
+    tcpSourceHelper.SetAttribute("DataRate", DataRateValue(DataRate("3Mbps")));
     tcpSourceHelper.SetAttribute("OnTime", StringValue("ns3::ConstantRandomVariable[Constant=1]"));
     tcpSourceHelper.SetAttribute("OffTime", StringValue("ns3::ConstantRandomVariable[Constant=0]"));
     ApplicationContainer tcpSources;
@@ -127,25 +137,48 @@ int main(int argc, char* argv[]) {
     tcpSinks.Start(Seconds(1.0));
     tcpSinks.Stop(Seconds(10.0));
 
-    InetSocketAddress udpSinkAddr(IfaceRT13.GetAddress(1), 4000);
+    // Udp taffic from T3 TO T0
+    InetSocketAddress udpSinkAddr1(IfaceRT00.GetAddress(1), 4001);
 
-    OnOffHelper udpSourceHelper("ns3::UdpSocketFactory", Address());
-    udpSourceHelper.SetAttribute("Remote", AddressValue(udpSinkAddr));
-    udpSourceHelper.SetAttribute("OnTime", StringValue("ns3::ConstantRandomVariable[Constant=1]"));
-    udpSourceHelper.SetAttribute("OffTime", StringValue("ns3::ConstantRandomVariable[Constant=0]"));
+    OnOffHelper udpSourceHelper1("ns3::UdpSocketFactory", Address());
+    udpSourceHelper1.SetAttribute("Remote", AddressValue(udpSinkAddr1));
+    udpSourceHelper1.SetAttribute("OnTime", StringValue("ns3::ConstantRandomVariable[Constant=1]"));
+    udpSourceHelper1.SetAttribute("OffTime", StringValue("ns3::ConstantRandomVariable[Constant=0]"));
 
-    ApplicationContainer udpSources;
-    udpSources.Add(udpSourceHelper.Install(TrafficNodes.Get(0)));
-    udpSources.Start(Seconds(1.0));
-    udpSources.Stop(Seconds(10.0));
+    ApplicationContainer udpSources1;
+    udpSources1.Add(udpSourceHelper1.Install(TrafficNodes.Get(3)));
+    udpSources1.Start(Seconds(1.0));
+    udpSources1.Stop(Seconds(10.0));
 
-    PacketSinkHelper udpSinkHelper("ns3::UdpSocketFactory", udpSinkAddr);
+    PacketSinkHelper udpSinkHelper1("ns3::UdpSocketFactory", udpSinkAddr1);
 
-    ApplicationContainer udpSinks;
-    udpSinks.Add(udpSinkHelper.Install(TrafficNodes.Get(3)));
-    
-    udpSinks.Start(Seconds(1.0));
-    udpSinks.Stop(Seconds(10.0));
+    ApplicationContainer udpSinks1;
+    udpSinks1.Add(udpSinkHelper1.Install(TrafficNodes.Get(0)));
+    udpSinks1.Start(Seconds(1.0));
+    udpSinks1.Stop(Seconds(10.0));
+
+
+    //udp taffic from T1 to T2
+    InetSocketAddress udpSinkAddr2(IfaceRT02.GetAddress(1), 4002);
+
+    OnOffHelper udpSourceHelper2("ns3::UdpSocketFactory", Address());
+    udpSourceHelper2.SetAttribute("Remote", AddressValue(udpSinkAddr2));
+    udpSourceHelper2.SetAttribute("OnTime", StringValue("ns3::ConstantRandomVariable[Constant=1]"));
+    udpSourceHelper2.SetAttribute("OffTime", StringValue("ns3::ConstantRandomVariable[Constant=0]"));
+
+    ApplicationContainer udpSources2;
+    udpSources2.Add(udpSourceHelper2.Install(TrafficNodes.Get(1)));
+    udpSources2.Start(Seconds(1.0));
+    udpSources2.Stop(Seconds(10.0));
+
+    PacketSinkHelper udpSinkHelper2("ns3::UdpSocketFactory", udpSinkAddr2);
+
+    ApplicationContainer udpSinks2;
+    udpSinks2.Add(udpSinkHelper2.Install(TrafficNodes.Get(2)));
+
+    udpSinks2.Start(Seconds(1.0));
+    udpSinks2.Stop(Seconds(10.0));
+
 
     AnimationInterface anim(animFile);
     anim.EnablePacketMetadata();                                // Optional
@@ -175,9 +208,70 @@ int main(int argc, char* argv[]) {
     // Set up the actual simulation
     Ipv4GlobalRoutingHelper::PopulateRoutingTables();
 
+    // Create a file stream to record sent and received packets
+    AsciiTraceHelper ascii;
+    Ptr<OutputStreamWrapper> streamSent = ascii.CreateFileStream("tcp-sent-reverse.txt");
+    Ptr<OutputStreamWrapper> streamReceived = ascii.CreateFileStream("tcp-received-reverse.txt");
+
+    // Attach the trace sources
+    tcpSources.Get(0)->TraceConnectWithoutContext("Tx", MakeBoundCallback(&TxCallback, streamSent));
+    Config::ConnectWithoutContext("/NodeList/*/ApplicationList/*/$ns3::PacketSink/Rx", MakeBoundCallback(&RxCallback, streamReceived));
+
+    double firstSentTime = -1.0;
+
     Simulator::Run();
+
+    // Calculate TCP Throughput
+    Ptr<PacketSink> tcpSink = DynamicCast<PacketSink>(tcpSinks.Get(0));
+    uint64_t tcpTotalBytes = tcpSink->GetTotalRx();
+    double simulationDuration = 9.0; // Duration over which the throughput is calculated (10s - 1s)
+    double tcpThroughput = (tcpTotalBytes * 8.0) / (simulationDuration * 1024.0); // Convert to Kbps
+
+    // Calculate Average Delay
+    std::ifstream sentFile("tcp-sent-reverse.txt");
+    std::ifstream receivedFile("tcp-received-reverse.txt");
+    std::string lineSent, lineReceived;
+    double totalDelay = 0.0;
+    int packetCount = 0;
+
+    // Read the first sent time
+    if (getline(sentFile, lineSent)) {
+        std::istringstream sentStream(lineSent);
+        sentStream >> firstSentTime;
+    }
+
+    // Accumulate delays and count packets
+    while (getline(receivedFile, lineReceived)) {
+        std::istringstream receivedStream(lineReceived);
+        double receivedTime, packetSize;
+        receivedStream >> receivedTime >> packetSize;
+        totalDelay += receivedTime - firstSentTime;
+        packetCount++;
+    }  
+
+    double averageDelay = totalDelay / packetCount;
+
+    // Open a file for output and write all the calculated values
+    std::ofstream outFile;
+    outFile.open("tcp-performance-reverse.txt");
+    if (outFile.is_open()) {
+        outFile << "TCP Throughput: " << tcpThroughput << " Kbps\n";
+        outFile << "Average Delay: " << averageDelay << " seconds\n";
+        outFile.close(); // Close the file after writing
+        std::cout << "TCP performance metrics have been written to 'tcp-performance-reverse.txt'" << std::endl;
+    } else {
+        std::cerr << "Unable to open file 'tcp-performance-reverse.txt' for writing." << std::endl;
+    }
+
+    // Clean-up
+    sentFile.close();
+    receivedFile.close();
+
     std::cout << "Animation Trace file created:" << animFile << std::endl;
     Simulator::Destroy();
+
+    // Remove temporary files
+    // std::remove("tcp-sent3-reverse.txt");
+    // std::remove("tcp-received3-reverse.txt");
     return 0;
 }
-

@@ -1,8 +1,6 @@
-//Dumbbell topology with 2 routers, 4 traffic nodes, 1 server and 1 client
-//with a wireless connection between the routers.
-//without any taffic created by UDP nodes.
-//fully functional TCP connection between the server and the client.
-
+#include <fstream> // For file I/O
+#include <iostream> // For input and output to the console
+#include <string> // For using the std::string class
 
 #include "ns3/applications-module.h"
 #include "ns3/core-module.h"
@@ -17,6 +15,8 @@
 #include "ns3/yans-wifi-helper.h"
 #include "ns3/wifi-phy.h"
 #include "ns3/constant-position-mobility-model.h"
+#include "ns3/flow-monitor-helper.h"
+#include "ns3/flow-monitor.h"
 
 using namespace ns3;
 
@@ -24,8 +24,8 @@ typedef NetDeviceContainer NDC;
 typedef Ipv4InterfaceContainer Ipv4IC;
 
 int main(int argc, char* argv[]) {
-
-    std::string animFile = "dumbbell-animation-test3.xml"; 
+    Config::SetDefault("ns3::TcpL4Protocol::SocketType", StringValue("ns3::TcpCubic"));
+    std::string animFile = "flow_reverse.xml"; 
     CommandLine cmd(__FILE__);
     cmd.Parse(argc, argv);
 
@@ -41,7 +41,7 @@ int main(int argc, char* argv[]) {
 
     // helper for p2p links
     PointToPointHelper p2p;
-    p2p.SetDeviceAttribute("DataRate", StringValue("1Mbps"));
+    p2p.SetDeviceAttribute("DataRate", StringValue("2Mbps"));
     p2p.SetChannelAttribute("Delay", StringValue("1ms"));
 
 
@@ -110,7 +110,7 @@ int main(int argc, char* argv[]) {
 
     // TCP Sender
     OnOffHelper tcpSourceHelper("ns3::TcpSocketFactory", InetSocketAddress(IfaceRE1.GetAddress(1), 8080));
-    tcpSourceHelper.SetAttribute("DataRate", DataRateValue(DataRate("1Mbps")));
+    tcpSourceHelper.SetAttribute("DataRate", DataRateValue(DataRate("2Mbps")));
     tcpSourceHelper.SetAttribute("OnTime", StringValue("ns3::ConstantRandomVariable[Constant=1]"));
     tcpSourceHelper.SetAttribute("OffTime", StringValue("ns3::ConstantRandomVariable[Constant=0]"));
     ApplicationContainer tcpSources;
@@ -127,29 +127,59 @@ int main(int argc, char* argv[]) {
     tcpSinks.Start(Seconds(1.0));
     tcpSinks.Stop(Seconds(10.0));
 
-    InetSocketAddress udpSinkAddr(IfaceRT13.GetAddress(1), 4000);
+    // Udp taffic from T3 TO T0
+    InetSocketAddress udpSinkAddr1(IfaceRT00.GetAddress(1), 4001);
 
-    OnOffHelper udpSourceHelper("ns3::UdpSocketFactory", Address());
-    udpSourceHelper.SetAttribute("Remote", AddressValue(udpSinkAddr));
-    udpSourceHelper.SetAttribute("OnTime", StringValue("ns3::ConstantRandomVariable[Constant=1]"));
-    udpSourceHelper.SetAttribute("OffTime", StringValue("ns3::ConstantRandomVariable[Constant=0]"));
+    OnOffHelper udpSourceHelper1("ns3::UdpSocketFactory", Address());
+    udpSourceHelper1.SetAttribute("Remote", AddressValue(udpSinkAddr1));
+    udpSourceHelper1.SetAttribute("OnTime", StringValue("ns3::ConstantRandomVariable[Constant=1]"));
+    udpSourceHelper1.SetAttribute("OffTime", StringValue("ns3::ConstantRandomVariable[Constant=0]"));
 
-    ApplicationContainer udpSources;
-    udpSources.Add(udpSourceHelper.Install(TrafficNodes.Get(0)));
-    udpSources.Start(Seconds(1.0));
-    udpSources.Stop(Seconds(10.0));
+    ApplicationContainer udpSources1;
+    udpSources1.Add(udpSourceHelper1.Install(TrafficNodes.Get(3)));
+    udpSources1.Start(Seconds(1.0));
+    udpSources1.Stop(Seconds(10.0));
 
-    PacketSinkHelper udpSinkHelper("ns3::UdpSocketFactory", udpSinkAddr);
+    PacketSinkHelper udpSinkHelper1("ns3::UdpSocketFactory", udpSinkAddr1);
 
-    ApplicationContainer udpSinks;
-    udpSinks.Add(udpSinkHelper.Install(TrafficNodes.Get(3)));
-    
-    udpSinks.Start(Seconds(1.0));
-    udpSinks.Stop(Seconds(10.0));
+    ApplicationContainer udpSinks1;
+    udpSinks1.Add(udpSinkHelper1.Install(TrafficNodes.Get(0)));
+    udpSinks1.Start(Seconds(1.0));
+    udpSinks1.Stop(Seconds(10.0));
+
+
+    //udp taffic from T1 to T2
+    InetSocketAddress udpSinkAddr2(IfaceRT02.GetAddress(1), 4002);
+
+    OnOffHelper udpSourceHelper2("ns3::UdpSocketFactory", Address());
+    udpSourceHelper2.SetAttribute("Remote", AddressValue(udpSinkAddr2));
+    udpSourceHelper2.SetAttribute("OnTime", StringValue("ns3::ConstantRandomVariable[Constant=1]"));
+    udpSourceHelper2.SetAttribute("OffTime", StringValue("ns3::ConstantRandomVariable[Constant=0]"));
+
+    ApplicationContainer udpSources2;
+    udpSources2.Add(udpSourceHelper2.Install(TrafficNodes.Get(1)));
+    udpSources2.Start(Seconds(1.0));
+    udpSources2.Stop(Seconds(10.0));
+
+    PacketSinkHelper udpSinkHelper2("ns3::UdpSocketFactory", udpSinkAddr2);
+
+    ApplicationContainer udpSinks2;
+    udpSinks2.Add(udpSinkHelper2.Install(TrafficNodes.Get(2)));
+
+    udpSinks2.Start(Seconds(1.0));
+    udpSinks2.Stop(Seconds(10.0));
+
+
+    // Flow monitor
+    Ptr<FlowMonitor> flowMonitor;
+    FlowMonitorHelper flowHelper;
+    flowMonitor = flowHelper.InstallAll();
 
     AnimationInterface anim(animFile);
     anim.EnablePacketMetadata();                                // Optional
     anim.EnableIpv4L3ProtocolCounters(Seconds(0), Seconds(10)); // Optional
+    //anim.EnableIpv4RouteTracking("RoutingTracking.xml", Seconds(1), Seconds(10), MilliSeconds(100));
+   
 
     Ptr<ConstantPositionMobilityModel> r0 = Routers.Get(0) -> GetObject<ConstantPositionMobilityModel>();
     Ptr<ConstantPositionMobilityModel> r1 = Routers.Get(1) -> GetObject<ConstantPositionMobilityModel>();
@@ -175,9 +205,11 @@ int main(int argc, char* argv[]) {
     // Set up the actual simulation
     Ipv4GlobalRoutingHelper::PopulateRoutingTables();
 
+    Simulator::Stop(Seconds(10));
     Simulator::Run();
+
     std::cout << "Animation Trace file created:" << animFile << std::endl;
     Simulator::Destroy();
+    flowMonitor->SerializeToXmlFile("flow_reverse.xml", true, true);
     return 0;
 }
-

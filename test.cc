@@ -13,7 +13,7 @@
 using namespace ns3;
 
 int main(int argc, char* argv[]) {
-    std::string animFile = "dumbell-second.xml"; 
+    std::string animFile = "test-animation.xml"; 
     CommandLine cmd(__FILE__);
     cmd.Parse(argc, argv);
 
