@@ -36,7 +36,9 @@ void RxCallback (Ptr<OutputStreamWrapper> stream, Ptr<const Packet> packet, cons
 
 int main(int argc, char* argv[]) {
 
-    std::string animFile = "throughput_delay_test1.xml"; 
+    Config::SetDefault("ns3::TcpL4Protocol::SocketType", StringValue("ns3::TcpCubic"));
+
+    std::string animFile = "throughput_delay_forward.xml"; 
     CommandLine cmd(__FILE__);
     cmd.Parse(argc, argv);
 
@@ -188,8 +190,8 @@ int main(int argc, char* argv[]) {
 
     // Create a file stream to record sent and received packets
     AsciiTraceHelper ascii;
-    Ptr<OutputStreamWrapper> streamSent = ascii.CreateFileStream("tcp-sent.txt");
-    Ptr<OutputStreamWrapper> streamReceived = ascii.CreateFileStream("tcp-received.txt");
+    Ptr<OutputStreamWrapper> streamSent = ascii.CreateFileStream("tcp-sent-forward.txt");
+    Ptr<OutputStreamWrapper> streamReceived = ascii.CreateFileStream("tcp-received-forward.txt");
 
     // Attach the trace sources
     tcpSources.Get(0)->TraceConnectWithoutContext("Tx", MakeBoundCallback(&TxCallback, streamSent));
@@ -206,8 +208,8 @@ int main(int argc, char* argv[]) {
     double tcpThroughput = (tcpTotalBytes * 8.0) / (simulationDuration * 1024.0); // Convert to Kbps
 
     // Calculate Average Delay
-    std::ifstream sentFile("tcp-sent.txt");
-    std::ifstream receivedFile("tcp-received.txt");
+    std::ifstream sentFile("tcp-sent-forward.txt");
+    std::ifstream receivedFile("tcp-received-forward.txt");
     std::string lineSent, lineReceived;
     double totalDelay = 0.0;
     int packetCount = 0;
@@ -231,14 +233,14 @@ int main(int argc, char* argv[]) {
 
     // Open a file for output and write all the calculated values
     std::ofstream outFile;
-    outFile.open("tcp-performance.txt");
+    outFile.open("tcp-performance-forward.txt");
     if (outFile.is_open()) {
         outFile << "TCP Throughput: " << tcpThroughput << " Kbps\n";
         outFile << "Average Delay: " << averageDelay << " seconds\n";
         outFile.close(); // Close the file after writing
-        std::cout << "TCP performance metrics have been written to 'tcp-performance.txt'" << std::endl;
+        std::cout << "TCP performance metrics have been written to 'tcp-performance-forward.txt'" << std::endl;
     } else {
-        std::cerr << "Unable to open file 'tcp-performance.txt' for writing." << std::endl;
+        std::cerr << "Unable to open file 'tcp-performance-forward.txt' for writing." << std::endl;
     }
 
     // Clean-up
@@ -249,7 +251,7 @@ int main(int argc, char* argv[]) {
     Simulator::Destroy();
 
     // Remove temporary files
-    // std::remove("tcp-sent.txt");
-    // std::remove("tcp-received.txt");
+    // std::remove("tcp-sent-forward.txt");
+    // std::remove("tcp-received-forward.txt");
     return 0;
 }
