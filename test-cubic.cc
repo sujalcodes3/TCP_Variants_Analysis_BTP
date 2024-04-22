@@ -1,7 +1,5 @@
-#include <fstream> // For file I/O
 #include <iostream> // For input and output to the console
 #include <string> // For using the std::string class
-
 #include "ns3/applications-module.h"
 #include "ns3/core-module.h"
 #include "ns3/internet-module.h"
@@ -21,16 +19,21 @@
 
 
 using namespace ns3;
+using namespace std;
 
 typedef NetDeviceContainer NDC;
 typedef Ipv4InterfaceContainer Ipv4IC;
 
 int main(int argc, char* argv[]) {
-    Config::SetDefault("ns3::TcpL4Protocol::SocketType", StringValue("ns3::TcpCubic"));
-    std::string animFile = "test.xml"; 
-    CommandLine cmd(__FILE__);
-    cmd.Parse(argc, argv);
 
+    std::string animFile = "test.xml"; 
+    string drate; 
+    CommandLine cmd(__FILE__);
+    cmd.AddValue("rate", "rate define", drate);
+    cmd.Parse(argc, argv);
+    
+    Config::SetDefault("ns3::TcpL4Protocol::SocketType", StringValue("ns3::TcpCubic"));
+    
     // Define nodes;
     NodeContainer EndNodes;
     NodeContainer Routers;
@@ -43,7 +46,7 @@ int main(int argc, char* argv[]) {
 
     // helper for p2p links
     PointToPointHelper p2p;
-    p2p.SetDeviceAttribute("DataRate", StringValue("3Mbps"));
+    p2p.SetDeviceAttribute("DataRate", StringValue(drate));
     p2p.SetChannelAttribute("Delay", StringValue("1ms"));
 
 
@@ -61,7 +64,6 @@ int main(int argc, char* argv[]) {
     Ssid ssid = Ssid("ns-3-ssid");
 
     WifiHelper wifi;
-    //wifi.SetRemoteStationManager("ns3::MinstrelHtWifiManager");
 
     NDC ConfiguredRouters;
     mac.SetType("ns3::AdhocWifiMac", "Ssid", SsidValue(ssid));
@@ -112,7 +114,7 @@ int main(int argc, char* argv[]) {
 
     // TCP Sender
     OnOffHelper tcpSourceHelper("ns3::TcpSocketFactory", InetSocketAddress(IfaceRE1.GetAddress(1), 8080));
-    tcpSourceHelper.SetAttribute("DataRate", DataRateValue(DataRate("3Mbps")));
+    tcpSourceHelper.SetAttribute("DataRate", DataRateValue(DataRate(drate)));
     tcpSourceHelper.SetAttribute("OnTime", StringValue("ns3::ConstantRandomVariable[Constant=1]"));
     tcpSourceHelper.SetAttribute("OffTime", StringValue("ns3::ConstantRandomVariable[Constant=0]"));
     ApplicationContainer tcpSources;
@@ -133,6 +135,7 @@ int main(int argc, char* argv[]) {
     InetSocketAddress udpSinkAddr1(IfaceRT13.GetAddress(1), 4001);
 
     OnOffHelper udpSourceHelper1("ns3::UdpSocketFactory", Address());
+    udpSourceHelper1.SetAttribute("DataRate", DataRateValue(DataRate("512Kbps")));
     udpSourceHelper1.SetAttribute("Remote", AddressValue(udpSinkAddr1));
     udpSourceHelper1.SetAttribute("OnTime", StringValue("ns3::ConstantRandomVariable[Constant=1]"));
     udpSourceHelper1.SetAttribute("OffTime", StringValue("ns3::ConstantRandomVariable[Constant=0]"));
@@ -220,19 +223,20 @@ int main(int argc, char* argv[]) {
         Ipv4FlowClassifier::FiveTuple t = classifier->FindFlow (iter->first);
 
         if(iter -> first == 1) {
-            NS_LOG_UNCOND("Flow ID: " << iter->first << " Src Addr " << t.sourceAddress << " Dst Addr " << t.destinationAddress);
-            NS_LOG_UNCOND("Tx Packets = " << iter->second.txPackets);
-            NS_LOG_UNCOND("Rx Packets = " << iter->second.rxPackets);
+            //NS_LOG_UNCOND("Flow ID: " << iter->first << " Src Addr " << t.sourceAddress << " Dst Addr " << t.destinationAddress);
+            //NS_LOG_UNCOND("Tx Packets = " << iter->second.txPackets);
+            //NS_LOG_UNCOND("Rx Packets = " << iter->second.rxPackets);
+            cout << "Flow ID: " << iter->first << " Src Addr " << t.sourceAddress << " Dst Addr " << t.destinationAddress << endl;
+            cout << "Tx Packets = " << iter->second.txPackets << endl;
+            cout << "Rx Packets = " << iter->second.rxPackets << endl;
             
-
-
             // Calculate Mean Delay
             double meanDelay = 0;
             if (iter->second.rxPackets > 0)
             {
                 meanDelay = (iter->second.delaySum.GetSeconds() / iter->second.rxPackets);
             }
-            NS_LOG_UNCOND("Mean Delay: " << meanDelay * 1000 << "ms");
+            cout << "Mean Delay: " << meanDelay * 1000 << "ms" << endl;
 
             // Calculate Packet Loss
             uint32_t lostPackets = iter->second.txPackets - iter->second.rxPackets;
@@ -241,8 +245,8 @@ int main(int argc, char* argv[]) {
             {
                 packetLossRatio = static_cast<double>(lostPackets) / iter->second.txPackets;
             }
-            NS_LOG_UNCOND("Lost Packets = " << lostPackets);
-            NS_LOG_UNCOND("Packet Loss Ratio = " << packetLossRatio);
+            cout << "Lost Packets = " << lostPackets << endl;
+            cout << "Packet Loss Ratio = " << packetLossRatio * 100 << endl;
         }
     }
     // Calculate TCP Throughput
@@ -250,10 +254,10 @@ int main(int argc, char* argv[]) {
     uint64_t tcpTotalBytes = tcpSink->GetTotalRx();
     double simulationDuration = 9.0; // Duration over which the throughput is calculated (10s - 1s)
     double tcpThroughput = (tcpTotalBytes * 8.0) / (simulationDuration * 1024.0); // Convert to Kbps
-    NS_LOG_UNCOND("TCP Throughput: " << tcpThroughput << " Kbps");
-    
-    std::cout << "Animation Trace file created:" << animFile << std::endl;
+    cout << "TCP Throughput: " << tcpThroughput << " Kbps" << endl;
     Simulator::Destroy();
-    flowMonitor->SerializeToXmlFile("flow_test.xml", true, true);
+
+    std::cout << std::endl;
     return 0;
 }
+
