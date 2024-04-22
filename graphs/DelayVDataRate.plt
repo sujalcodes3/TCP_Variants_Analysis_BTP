@@ -1,5 +1,5 @@
 set terminal png
-    set title "Mean Delay vs. Data Rate"
+    set title "Mean Delay vs. Data Rate (TCP-NewReno)"
 
     set xlabel "Data Rate (in bps)"
 
