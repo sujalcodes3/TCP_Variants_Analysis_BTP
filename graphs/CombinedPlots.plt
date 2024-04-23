@@ -1,6 +1,6 @@
 set terminal png
 set output "./graphics/CombinedPacketLoss.png"
-set xlabel "Channel DataRate(in bps)"
+set xlabel "Channel DataRate(kbps)"
 set ylabel "Packet Loss Fraction"
 set title "Packet Loss vs. Channel DataRate (Comparision)"
 
@@ -9,7 +9,7 @@ set style line 2 lt 1 lc rgb "green" lw 2
 set style line 3 lt 1 lc rgb "red" lw 2
 set style line 4 lt 1 lc rgb "purple" lw 2
 
-set key top left
+set key top right
 
 plot "CombinedStats.txt" using ($1 == 0 ? $2 : 1/0):4 with linespoints  title "Vegas" ls 1, \
     "" using ($1 == 1 ? $2 : 1/0):4 with linespoints title "CUBIC" ls 2, \

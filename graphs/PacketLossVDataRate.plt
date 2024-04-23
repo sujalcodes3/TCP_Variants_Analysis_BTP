@@ -1,7 +1,7 @@
 set terminal png
     set title "Packet Loss vs. Data Rate (TCP-NewReno)"
 
-    set xlabel "Data Rate (in bps)"
+    set xlabel "Data Rate (kbps)"
 
     set ylabel "Packet Loss Fraction"
 

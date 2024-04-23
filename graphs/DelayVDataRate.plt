@@ -1,9 +1,9 @@
 set terminal png
     set title "Mean Delay vs. Data Rate (TCP-NewReno)"
 
-    set xlabel "Data Rate (in bps)"
+    set xlabel "Data Rate (kbps)"
 
-    set ylabel "Mean Delay (in ms)"
+    set ylabel "Mean Delay (ms)"
 
     set datafile separator whitespace 
 
